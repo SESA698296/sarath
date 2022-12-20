@@ -8,7 +8,7 @@ public with sharing class StopEmailHandler {
         List<AuthSession> currentSession = new List<AuthSession>(); 
         
         currentSession = [SELECT LoginType , IsCurrent,SessionType, CreatedDate ,SessionSecurityLevel FROM AuthSession where 
-                          IsCurrent = True and LoginHistory.UserId =: UserInfo.getUserId()];//0057b000003D21jAAC
+                          (IsCurrent = false or IsCurrent = true) and LoginHistory.UserId =: UserInfo.getUserId()];//0057b000003D21jAAC
         system.debug('currentSession:'+currentSession);
         
         boolean isApiConnected = False;
@@ -17,22 +17,23 @@ public with sharing class StopEmailHandler {
         boolean isVisualForce = False ;
         if(currentSession!=null && currentSession.size()>0){
             
-            list<Profile_Name__mdt> profileNameList=[select id,label from Profile_Name__mdt];
+            list<Profile_Name__mdt> profileNameList=[select id,label,Authorized_Profile_Name__c from Profile_Name__mdt];
             list<String> authorizeProfile = new List<String>();
             FOR(Profile_Name__mdt Pd:profileNameList){
-                authorizeProfile.add(Pd.label);
+                authorizeProfile.add(Pd.Authorized_Profile_Name__c);
             }
             system.debug('AuthorizeProfile:'+authorizeProfile);
             for (EmailMessage e : emailMessageList){
                 for (AuthSession a :currentSession){
                     system.debug('IsCurrent:'+a.IsCurrent);
-                    if(a.sessiontype=='API'){
+                    if(a.sessiontype=='Oauth2' || a.sessiontype=='API' ){
                         system.debug('a.sessiontype:'+a.sessiontype);
                         e.addError( profileName + '  ' + system.label.profileName);
                     }else{
 
                         if (authorizeProfile.contains(profileName)){
                             system.debug('adderror');
+                             
                         }else{
                             e.addError( profileName + '  ' + system.label.profileName);
                         }
